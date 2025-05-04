@@ -2,31 +2,32 @@
 import streamlit as st
 import requests
 from datetime import datetime
-from PIL import Image
-from io import BytesIO
 
-st.set_page_config(page_title="BachatVikas - Financial News", page_icon=":newspaper:")
-st.title("📰 BachatVikas - Financial News and AI Summaries")
+st.set_page_config(page_title="BachatVikas - Financial News", layout="wide")
+st.markdown("# 📰 BachatVikas - Financial News and AI Summaries")
 
-# Dummy data for testing
-news = {
-    "title": "Govt terminates services of IMF ED K V Subramanian 6 months ahead of tenure",
-    "pubDate": "2025-05-03 17:52:00",
-    "image_url": "https://assets.thehansindia.com/h-upload/feeds/2021/10/07/1114078-kv-subramanian.jpg"
-}
+# Load news data from NewsData.io API (mocked for demonstration)
+url = "https://newsdata.io/api/1/news?apikey=YOUR_API_KEY&category=business&language=en"
+response = requests.get(url)
+data = response.json()
 
-st.subheader(news["title"])
-st.caption(f"🕒 {datetime.strptime(news['pubDate'], '%Y-%m-%d %H:%M:%S').strftime('%b %d, %Y %H:%M')}")
+if "results" in data:
+    for news_item in data["results"]:
+        st.subheader(news_item["title"])
+        pub_date = news_item.get("pubDate", "")
+        if pub_date:
+            try:
+                date_obj = datetime.strptime(pub_date, "%Y-%m-%d %H:%M:%S")
+                st.caption(f"🕒 {date_obj.strftime('%B %d, %Y %H:%M')}")
+            except ValueError:
+                st.caption(f"🕒 {pub_date}")
 
-st.warning("The `use_column_width` parameter has been deprecated and replaced with `use_container_width`.")
+        # Show warning if image is invalid or missing
+        image_url = news_item.get("image_url", "")
+        if image_url and image_url.startswith("http"):
+            st.image(image_url, caption=news_item["title"], use_container_width=True)
+        else:
+            st.warning("No valid image available for this article.")
 
-# Load and display image safely
-try:
-    response = requests.get(news["image_url"])
-    if response.status_code == 200:
-        img = Image.open(BytesIO(response.content))
-        st.image(img, caption="News Image", use_container_width=True)
-    else:
-        st.error("❌ Unable to load image.")
-except Exception as e:
-    st.error(f"❌ Error loading image: {e}")
+else:
+    st.error("Failed to load news data. Please check your API key or network connection.")
